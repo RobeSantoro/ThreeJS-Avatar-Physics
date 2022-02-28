@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'
 import { Cube } from './cube.js'
 import * as CANNON from 'cannon-es'
 
@@ -19,7 +20,7 @@ scene.add(light)
 
 /////////////////////////////////////////////////////////// Cube Params
 
-let cubePosition = new THREE.Vector3(0, 1, 5)
+let cubePosition = new THREE.Vector3(0, 1, 0)
 let cubeSize = new THREE.Vector3(1, 1, 1)
 
 //////////////////////////////////////////////////////// Three.js World
@@ -33,7 +34,7 @@ const cube = new THREE.Mesh(
     metalness: 0
   })
 )
-
+cube.position.y = (cubePosition.y * 0.5)
 scene.add(cube)
 
 ////////////////////////////////////////////////// Cannon Physics World
@@ -69,7 +70,7 @@ world.addBody(floorBody)
 
 ///////////////////////////////////////////////////// Cube cannon shape
 
-const cubeShape = new CANNON.Box(new CANNON.Vec3(cubeSize.x*.5, cubeSize.y*.5, cubeSize.z*.5))
+const cubeShape = new CANNON.Box(new CANNON.Vec3(cubeSize.x * .5, cubeSize.y * .5, cubeSize.z * .5))
 // Cube cannon body
 const cubeBody = new CANNON.Body({
   mass: 1,
@@ -87,7 +88,10 @@ const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerH
 camera.position.set(0, 5, 10)
 camera.lookAt(new THREE.Vector3(cubePosition.x, cubePosition.y, cubePosition.z))
 
-scene.add(camera)
+const cameraGroup = new THREE.Group()
+cameraGroup.position.set(0, 0, 0)
+cameraGroup.add(camera)
+//scene.add(cameraGroup) // Added by controls.getObject()
 
 ////////////////////////////////////////////////////////////// Renderer
 
@@ -99,98 +103,176 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.render(scene, camera)
 
-document.body.appendChild(renderer.domElement)
+//////////////////////////////////////////////////////////// Canvas DOM 
 
-///////////////////////////////////////////////////////// Orbit Controls
+const canvas = renderer.domElement
+document.body.appendChild(canvas)
 
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true
-controls.dampingFactor = 0.25
-controls.target.set(cubePosition.x, cubePosition.y, cubePosition.z)
+////////////////////////////////////////////////// Pointerlock Controls
 
-const offset = new THREE.Vector3(0, 0, 0)
+const controls = new PointerLockControls(cameraGroup, canvas)
+//console.log(controls.getObject())
+scene.add(controls.getObject());
 
-/////////////////////////////////////////////////////////// Animate Loop
+///////////////////////////////////////////////////// Keyboard Controls
+
+// Add event listener to keypresses
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+let canJump = true;
+
+let velocity = new THREE.Vector3(0, 0, 0)
+const direction = new THREE.Vector3(0, 0, 1);
+
+const onKeyDown = function (event) {
+
+  switch (event.code) {
+
+    case 'ArrowUp':
+    case 'KeyW':
+      moveForward = true;
+      break;
+
+    case 'ArrowLeft':
+    case 'KeyA':
+      moveLeft = true;
+      break;
+
+    case 'ArrowDown':
+    case 'KeyS':
+      moveBackward = true;
+      break;
+
+    case 'ArrowRight':
+    case 'KeyD':
+      moveRight = true;
+      break;
+
+    case 'Space':
+      if (canJump === true) velocity.y += 350;
+      canJump = false;
+      break;
+
+  }
+
+};
+
+const onKeyUp = function (event) {
+
+  switch (event.code) {
+
+    case 'ArrowUp':
+    case 'KeyW':
+      moveForward = false;
+      break;
+
+    case 'ArrowLeft':
+    case 'KeyA':
+      moveLeft = false;
+      break;
+
+    case 'ArrowDown':
+    case 'KeyS':
+      moveBackward = false;
+      break;
+
+    case 'ArrowRight':
+    case 'KeyD':
+      moveRight = false;
+      break;
+
+  }
+
+};
+
+document.addEventListener('keydown', onKeyDown);
+document.addEventListener('keyup', onKeyUp);
+
+canvas.addEventListener('click', function () {
+  controls.lock()
+})
+
+////////////////////////////////////////////////////////// Animate Loop
+
 
 const clock = new THREE.Clock()
 let oldElapsedTime = 0
 
-// Add event listener to keypresses
-document.addEventListener('keydown', (event) => {
-  if (!event.repeat) {
-    //console.log(event.repeat);
-    switch (event.code) { // Keycode deprecated ?????
-      case "KeyW":
-      case "ArrowUp":
-        cubeBody.velocity.z -= 5 // Move forward
-        break
-      case "KeyA":
-      case "ArrowLeft":
-        cubeBody.velocity.x -= 5 // Move left
-        break
-      case "KeyS":
-      case "ArrowDown":
-        cubeBody.velocity.z += 5 // Move backward      
-        break
-      case "KeyD":
-      case "ArrowRight":
-        cubeBody.velocity.x += 5 // Move right      
-        break
-      case 'Space':
-        cubeBody.velocity.y += 5 // Jump
-        break
-      default:
-        break
-    }
-  }
-}, false)
-
-document.addEventListener('keyup', (event) => {  
-  switch (event.code) { // Keycode deprecated ?????
-    case "KeyW":
-    case "ArrowUp":
-    case "KeyS":
-    case "ArrowDown":
-    case "KeyA":
-    case "ArrowLeft":
-    case "KeyD":
-    case "ArrowRight":
-      cubeBody.velocity.set(0, 0, 0) // Stop moving
-      break
-    //case 'Space':
-      cubeBody.velocity.set(0, 0, 0) // Stop jumping
-    default:
-      break
-  }
-}, false)
+let prevTime = performance.now();
+//console.log(prevTime);
 
 function animate() {
 
+  // Call the animate function again on the next frame
+  requestAnimationFrame(animate)
+
+  /* // CANNON Physics
   const elapsedTime = clock.getElapsedTime()
   const deltaTime = elapsedTime - oldElapsedTime
   oldElapsedTime = elapsedTime
 
   // Update Cannon World
-  world.step(1 / 60, deltaTime, 3)
+  world.step(1 / 60, deltaTime, 3) */
 
   // Update cube position
-  //cube.position.y = cubeBody.position.y
-  //console.log(cubeBody.position.y);
-  cube.position.copy(cubeBody.position)
-  //cube.quaternion.copy(cubeBody.quaternion)
+  // cube.position.copy(cubeBody.position)
+
+  // Update camera position
+  const time = performance.now();
+
+  if (controls.isLocked === true) {
+
+    const delta = (time - prevTime) / 1000;
+
+    velocity.x -= velocity.x * 0.001 * delta;
+    velocity.z -= velocity.z * 0.001 * delta;
+
+    
+    //velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+    
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize(); // this ensures consistent movements in all directions
+    
+    if (moveForward || moveBackward) velocity.z -= direction.z * 1 * delta;
+    if (moveLeft || moveRight) velocity.x -= direction.x * 1 * delta;
+    
+    //console.log(velocity.x, velocity.z);
+    /* if (onObject === true) {
+
+      velocity.y = Math.max(0, velocity.y);
+      canJump = true;
+
+    } */
+
+    controls.moveRight(- velocity.x * delta);
+    controls.moveForward(- velocity.z * delta);
+
+    //controls.getObject().position.y += (velocity.y * delta); // new behavior
+
+    /*     if (controls.getObject().position.y < 10) {
+    
+          velocity.y = 0;
+          controls.getObject().position.y = 10;
+    
+          canJump = true;
+    
+        } */
+
+
+  }
+
+  prevTime = time;
 
   // Render the Scene
   renderer.render(scene, camera)
 
   // Update the controls  
-  //console.log(cubeBody.position.x, cubeBody.position.y, cubeBody.position.z);
-  
-  //controls.object.position.copy(cubeBody.position)
-  controls.target.set(cube.position.x, cube.position.y, cube.position.z)
-  controls.update()
+  //console.log(controls.getObject().position.x, controls.getObject().position.y, controls.getObject().position.z);
 
-  // Call the animate function again on the next frame
-  requestAnimationFrame(animate)
+
 }
 
 animate()
