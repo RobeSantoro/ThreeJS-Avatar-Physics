@@ -1,17 +1,10 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-//import { Cube } from './cube.js'
+import { Cube } from './cube.js'
 import * as CANNON from 'cannon-es'
 
 // Create the Scene
 const scene = new THREE.Scene()
-
-// Camera
-const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000)
-camera.position.set(-10, 5, 10)
-camera.lookAt(new THREE.Vector3(0, 0, 0))
-
-scene.add(camera)
 
 // Add grid helper and axis helper
 const gridHelper = new THREE.GridHelper(10, 10)
@@ -24,26 +17,16 @@ light.position.set(-1, 3, 4)
 
 scene.add(light)
 
-// Create the Renderer
-const renderer = new THREE.WebGLRenderer( { 
-  antialias: true
- } )
-// Render the Scene
-renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.render(scene, camera)
+/////////////////////////////////////////////////////////// Cube Params
 
-document.body.appendChild(renderer.domElement)
+let cubePosition = new THREE.Vector3(0, 1, 5)
+let cubeSize = new THREE.Vector3(1, 1, 1)
 
-// Add OrbitControls
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.autoRotate = true
-controls.autoRotateSpeed = 0.1
-
-//////////////////////////////////////////////////////////// Three.js World
+//////////////////////////////////////////////////////// Three.js World
 
 // Create a cube
 const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z),
   new THREE.MeshStandardMaterial({
     color: 0x00ff00,
     roughness: 1,
@@ -53,7 +36,8 @@ const cube = new THREE.Mesh(
 
 scene.add(cube)
 
-////////////////////////////////////////////////////// Cannon Physics World
+////////////////////////////////////////////////// Cannon Physics World
+
 const world = new CANNON.World()
 world.gravity.set(0, -9.82, 0)
 world.broadphase = new CANNON.SAPBroadphase(world)
@@ -67,12 +51,12 @@ const defaultcontactMaterial = new CANNON.ContactMaterial(
   defaultMaterial,
   defaultMaterial,
   {
-    friction: 0.001,
+    friction: 0,
     restitution: 0
   }
 )
 world.addContactMaterial(defaultcontactMaterial)
-  
+
 // Floor
 const floorShape = new CANNON.Plane()
 const floorBody = new CANNON.Body({
@@ -83,81 +67,136 @@ const floorBody = new CANNON.Body({
 })
 world.addBody(floorBody)
 
-// Cube cannon shape
-const cubeShape = new CANNON.Box(new CANNON.Vec3(.5,.5,.5))
+///////////////////////////////////////////////////// Cube cannon shape
+
+const cubeShape = new CANNON.Box(new CANNON.Vec3(cubeSize.x*.5, cubeSize.y*.5, cubeSize.z*.5))
 // Cube cannon body
 const cubeBody = new CANNON.Body({
   mass: 1,
-  position: new CANNON.Vec3(0, 3, 0),
+  position: cubePosition,
   shape: cubeShape,
-  quaternion: new CANNON.Quaternion().setFromEuler(45, 0, 0),
+  //quaternion: new CANNON.Quaternion().setFromEuler(45, 0, 0),
   material: defaultMaterial
 })
 world.addBody(cubeBody)
 
+//////////////////////////////////////////////////////////////// Camera
 
+// Camera
+const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000)
+camera.position.set(0, 5, 10)
+camera.lookAt(new THREE.Vector3(cubePosition.x, cubePosition.y, cubePosition.z))
 
-////////////////////////////////////////////////////////////// Animate Loop
+scene.add(camera)
+
+////////////////////////////////////////////////////////////// Renderer
+
+// Create the Renderer
+const renderer = new THREE.WebGLRenderer({
+  antialias: true
+})
+// Render the Scene
+renderer.setSize(window.innerWidth, window.innerHeight)
+renderer.render(scene, camera)
+
+document.body.appendChild(renderer.domElement)
+
+///////////////////////////////////////////////////////// Orbit Controls
+
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.enableDamping = true
+controls.dampingFactor = 0.25
+controls.target.set(cubePosition.x, cubePosition.y, cubePosition.z)
+
+const offset = new THREE.Vector3(0, 0, 0)
+
+/////////////////////////////////////////////////////////// Animate Loop
 
 const clock = new THREE.Clock()
 let oldElapsedTime = 0
 
 // Add event listener to keypresses
 document.addEventListener('keydown', (event) => {
-  switch (event.key) { // Keycode deprecated ?????
-    case 'w':
-      cubeBody.velocity.set(0, 2, 0)
+  if (!event.repeat) {
+    //console.log(event.repeat);
+    switch (event.code) { // Keycode deprecated ?????
+      case "KeyW":
+      case "ArrowUp":
+        cubeBody.velocity.z -= 5 // Move forward
+        break
+      case "KeyA":
+      case "ArrowLeft":
+        cubeBody.velocity.x -= 5 // Move left
+        break
+      case "KeyS":
+      case "ArrowDown":
+        cubeBody.velocity.z += 5 // Move backward      
+        break
+      case "KeyD":
+      case "ArrowRight":
+        cubeBody.velocity.x += 5 // Move right      
+        break
+      case 'Space':
+        cubeBody.velocity.y += 5 // Jump
+        break
+      default:
+        break
+    }
+  }
+}, false)
+
+document.addEventListener('keyup', (event) => {  
+  switch (event.code) { // Keycode deprecated ?????
+    case "KeyW":
+    case "ArrowUp":
+    case "KeyS":
+    case "ArrowDown":
+    case "KeyA":
+    case "ArrowLeft":
+    case "KeyD":
+    case "ArrowRight":
+      cubeBody.velocity.set(0, 0, 0) // Stop moving
       break
-    case 'a':
-      cubeBody.velocity.set(-2, 0, 0)
-      break
-    case 's':
-      cubeBody.velocity.set(0, -2, 0)
-      break
-    case 'd':
-      cubeBody.velocity.set(2, 0, 0)
-      break
-    case 'q':
-      cubeBody.velocity.set(0, 0, 2)
-      break 
-    case 'e':
-      cubeBody.velocity.set(0, 0, -2)
-      break
+    //case 'Space':
+      cubeBody.velocity.set(0, 0, 0) // Stop jumping
     default:
       break
   }
-})
-
-
+}, false)
 
 function animate() {
 
   const elapsedTime = clock.getElapsedTime()
   const deltaTime = elapsedTime - oldElapsedTime
-  oldElapsedTime = elapsedTime  
+  oldElapsedTime = elapsedTime
 
   // Update Cannon World
-  world.step(1/60, deltaTime, 3)
+  world.step(1 / 60, deltaTime, 3)
 
   // Update cube position
   //cube.position.y = cubeBody.position.y
   //console.log(cubeBody.position.y);
   cube.position.copy(cubeBody.position)
-  cube.quaternion.copy(cubeBody.quaternion)
+  //cube.quaternion.copy(cubeBody.quaternion)
 
   // Render the Scene
   renderer.render(scene, camera)
 
-  // Update the controls
+  // Update the controls  
+  //console.log(cubeBody.position.x, cubeBody.position.y, cubeBody.position.z);
+  
+  //controls.object.position.copy(cubeBody.position)
+  controls.target.set(cube.position.x, cube.position.y, cube.position.z)
   controls.update()
 
   // Call the animate function again on the next frame
   requestAnimationFrame(animate)
 }
+
 animate()
 
 // Add a listener to the window resize event
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
