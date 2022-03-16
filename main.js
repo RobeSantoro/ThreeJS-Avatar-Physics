@@ -17,19 +17,19 @@ import { Cube } from './cube.js'
 
 // Add Stats
 const stats = new Stats()
-stats.domElement.height = '48px';
-//[].forEach.call(stats.domElement.children, (child) => (child.style.display = ''));
-document.body.appendChild(stats.dom)
+stats.domElement.style.position = "static";
+document.body.appendChild(stats.domElement)
 
 // DAT GUI
 const gui = new dat.GUI()
 const perfFolder = gui.addFolder("Performance");
 const perfLi = document.createElement("li");
-stats.domElement.style.position = "static";
 perfLi.appendChild(stats.domElement);
 perfLi.classList.add("gui-stats");
 perfFolder.__ul.appendChild(perfLi);
 perfFolder.open()
+
+console.log(perfFolder)
 
 
 // Create the Scene

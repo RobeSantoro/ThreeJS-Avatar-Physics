@@ -21,7 +21,7 @@ export class Cube {
       mass: 1,
       position: params.cubePosition,
       shape: cubeShape,
-      //quaternion: new CANNON.Quaternion().setFromEuler(45, 0, 0),
+      quaternion: new CANNON.Quaternion().setFromEuler(0, 0, 0),
       material: params.defaultMaterial
     })
     params.world.addBody(this.cubeBody)
