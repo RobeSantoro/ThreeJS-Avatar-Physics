@@ -9,10 +9,10 @@ export class Cube {
     
   _CreateThreeCube(params) {
     const geometry = new THREE.BoxGeometry(params.cubeSize.x, params.cubeSize.y, params.cubeSize.z)
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-    this.cube = new THREE.Mesh(geometry, material)
-    this.cube.position.y = (params.cubePosition.y * 0.5)
-    params.scene.add(this.cube)
+    const material = new THREE.MeshStandardMaterial({ color: params.cubeColor })
+    this.cubeMesh = new THREE.Mesh(geometry, material)
+    this.cubeMesh.position.y = (params.cubePosition.y * 0.5)
+    params.scene.add(this.cubeMesh)
   }
 
   _CreateCannonCube(params) {
@@ -28,8 +28,8 @@ export class Cube {
   }
 
   _Update() {
-    this.cube.position.copy(this.cubeBody.position)
-    this.cube.quaternion.copy(this.cubeBody.quaternion)
+    this.cubeMesh.position.copy(this.cubeBody.position)
+    this.cubeMesh.quaternion.copy(this.cubeBody.quaternion)
   }
 
 }

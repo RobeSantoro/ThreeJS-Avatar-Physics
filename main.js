@@ -1,14 +1,36 @@
+// Import Three.js
 import * as THREE from 'three'
+// Import OrbitControls
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
-import { Cube } from './cube.js'
+// Import Cannon.js
 import * as CANNON from 'cannon-es'
 
+// Import Stats
 import Stats from 'three/examples/jsm/libs/stats.module.js'
+
+// Import DAT GUI
+import * as dat from 'dat.gui'
+
+// Import Cube class
+import { Cube } from './cube.js'
 
 // Add Stats
 const stats = new Stats()
+stats.domElement.height = '48px';
+//[].forEach.call(stats.domElement.children, (child) => (child.style.display = ''));
 document.body.appendChild(stats.dom)
+
+// DAT GUI
+const gui = new dat.GUI()
+const perfFolder = gui.addFolder("Performance");
+const perfLi = document.createElement("li");
+stats.domElement.style.position = "static";
+perfLi.appendChild(stats.domElement);
+perfLi.classList.add("gui-stats");
+perfFolder.__ul.appendChild(perfLi);
+perfFolder.open()
+
 
 // Create the Scene
 const scene = new THREE.Scene()
@@ -59,26 +81,30 @@ world.addBody(floorBody)
 const params = {
   scene: scene,
   world: world,
-  cubePosition: new THREE.Vector3(-1, 1, 0),
-  cubeSize:new THREE.Vector3(.5, .5, .5),
+  cubePosition: new THREE.Vector3(0, 1, 0),
+  cubeSize:new THREE.Vector3(1, 1, 1),
+  cubeColor: 0xff0000,
   material: defaultMaterial
 }
 
-const cube = new Cube(params)
+const cube1 = new Cube(params)
+console.log(cube1)
 
 const cube2 = new Cube({
   scene: scene,
   world: world,
-  cubePosition: new THREE.Vector3(1, 1, 0),
-  cubeSize:new THREE.Vector3(.5, .5, .5),
+  cubePosition: new THREE.Vector3(0, 2, 0),
+  cubeSize:new THREE.Vector3(1, 1, 1),
+  cubeColor: 0x00ff00,
   material: defaultMaterial
 })
 
 const cube3 = new Cube({
   scene: scene,
   world: world,
-  cubePosition: new THREE.Vector3(0, 1, 0),
-  cubeSize:new THREE.Vector3(.5, .5, .5),
+  cubePosition: new THREE.Vector3(0, 3, 0),
+  cubeSize:new THREE.Vector3(1, 1, 1),
+  cubeColor: 0x0000ff,
   material: defaultMaterial
 })
 
@@ -122,19 +148,24 @@ let keyControls = {
 document.addEventListener('keydown', (event) => {
   switch (event.key) { // Keycode deprecated ?????
     case 'w':
+    case 'ArrowUp':
       keyControls.foward = true
       break
     case 'a':
+    case 'ArrowLeft':
       keyControls.left = true
       break
     case 's':
+    case 'ArrowDown':
       keyControls.backward = true
       break
     case 'd':
+    case 'ArrowRight':  
       keyControls.right = true
       break
-    case 'space':
+    case ' ':
       keyControls.jump = true
+      console.log('jump')
       break
     default:
       break
@@ -146,18 +177,22 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('keyup', (event) => {
   switch (event.key) { // Keycode deprecated ?????
     case 'w':
+    case 'ArrowUp':
       keyControls.foward = false
       break
     case 'a':
+    case 'ArrowLeft':
       keyControls.left = false
       break
     case 's':
+    case 'ArrowDown':
       keyControls.backward = false
       break
     case 'd':
+    case 'ArrowRight':
       keyControls.right = false
       break
-    case 'space':
+    case ' ':
       keyControls.jump = false
       break
     default:
@@ -166,7 +201,7 @@ document.addEventListener('keyup', (event) => {
 
 })
 
-const vel = 0.2
+const vel = .5
 
 
 const clock = new THREE.Clock()
@@ -186,21 +221,25 @@ function animate() {
   // Update Cannon World
   world.step(1/60, deltaTime, 3)
 
-  cube._Update(deltaTime)
+  cube1._Update(deltaTime)
   cube2._Update(deltaTime)
   cube3._Update(deltaTime)
 
   // Update Key Controls
   if (keyControls.foward) {    
-    cube.cubeBody.velocity.z -= vel
+    cube1.cubeBody.velocity.z -= vel
   } else if (keyControls.backward) {
-    cube.cubeBody.velocity.z += vel
+    cube1.cubeBody.velocity.z += vel
   }
 
   if (keyControls.left) {
-    cube.cubeBody.velocity.x -= vel
+    cube1.cubeBody.velocity.x -= vel
   } else if (keyControls.right) {
-    cube.cubeBody.velocity.x += vel
+    cube1.cubeBody.velocity.x += vel
+  }
+
+  if (keyControls.jump) {
+    cube1.cubeBody.velocity.y += vel
   }
 
   // Render the Scene

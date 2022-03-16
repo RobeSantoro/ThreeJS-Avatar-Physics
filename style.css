@@ -7,3 +7,7 @@ body, canvas {
   background: transparent;
   overflow: hidden;
 }
+
+.dg li.gui-stats:not(.folder) {
+  height: auto;
+}
