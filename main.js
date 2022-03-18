@@ -81,7 +81,7 @@ world.addBody(floorBody)
 const params = {
   scene: scene,
   world: world,
-  cubePosition: new THREE.Vector3(0, 1, 0),
+  cubePosition: new THREE.Vector3(-1, 1, 0),
   cubeSize:new THREE.Vector3(1, 1, 1),
   cubeColor: 0xff0000,
   material: defaultMaterial
@@ -102,7 +102,7 @@ const cube2 = new Cube({
 const cube3 = new Cube({
   scene: scene,
   world: world,
-  cubePosition: new THREE.Vector3(0, 3, 0),
+  cubePosition: new THREE.Vector3(1, 3, 0),
   cubeSize:new THREE.Vector3(1, 1, 1),
   cubeColor: 0x0000ff,
   material: defaultMaterial
@@ -201,8 +201,7 @@ document.addEventListener('keyup', (event) => {
 
 })
 
-const vel = .5
-
+const vel = .1
 
 const clock = new THREE.Clock()
 let oldElapsedTime = 0
